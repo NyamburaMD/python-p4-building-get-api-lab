@@ -20,19 +20,62 @@ def index():
 
 @app.route('/bakeries')
 def bakeries():
-    return ''
+    all_bakeries = Bakery.query.all()
+    bakery_list = [{"id": b.id, "name": b.name, "created_at": b.created_at.isoformat() if b.created_at else None} for b in all_bakeries]
+    return make_response(jsonify(bakery_list), 200)
 
 @app.route('/bakeries/<int:id>')
 def bakery_by_id(id):
-    return ''
+    bakery = Bakery.query.get_or_404(id)
+    if not bakery:
+        return make_response(jsonify({'error': 'Bakery not found'}), 404)
+    
+    bakery_data = {
+        "id": bakery.id,
+        "name": bakery.name,
+        "created_at": bakery.created_at.isoformat() if bakery.created_at else None,
+        "baked_goods": [
+            {
+                "id": bg.id,
+                "name": bg.name,
+                "price": bg.price,
+                "created_at": bg.created_at.isoformat() if bg.created_at else None,
+                "bakery_id": bg.bakery_id,
+            } for bg in bakery.baked_goods
+        ]
+    }
+    return make_response(jsonify(bakery_data), 200)
 
 @app.route('/baked_goods/by_price')
 def baked_goods_by_price():
-    return ''
+    baked_goods = BakedGood.query.order_by(BakedGood.price.desc()).all()
+    baked_goods_serialized = [
+        {
+            "id": bg.id,
+            "name": bg.name,
+            "price": bg.price,
+            "created_at": bg.created_at.isoformat() if bg.created_at else None,
+            "bakery_id": bg.bakery_id,
+        } for bg in baked_goods
+    ]
+    return make_response(jsonify(baked_goods_serialized), 200)
 
 @app.route('/baked_goods/most_expensive')
 def most_expensive_baked_good():
-    return ''
+    baked_good = BakedGood.query.order_by(BakedGood.price.desc()).first()
+    if not baked_good:
+        return jsonify({"error": "No baked goods found"}), 404
+
+    baked_good_serialized = {
+        "id": baked_good.id,
+        "name": baked_good.name,
+        "price": baked_good.price,
+        "created_at": baked_good.created_at.isoformat() if baked_good.created_at else None,
+        "bakery_id": baked_good.bakery_id
+    }
+    return jsonify(baked_good_serialized), 200
+    
+
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
